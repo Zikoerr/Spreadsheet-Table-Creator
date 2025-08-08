@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spreadsheet Table Creator</title>
+    <title>Nafass Perfumes Table Creator</title>
     <!-- Use Tailwind CSS for a modern and responsive design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,38 +11,27 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+        /* Custom styles for multi-select to ensure it looks consistent */
+        select[multiple] {
+            height: auto;
+        }
+        select[multiple] option {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Spreadsheet Table Creator</h1>
-        <p class="text-center text-gray-600 mb-8">Define your table headers or import from a CSV file.</p>
-
-        <!-- Header Definition Section -->
-        <div id="headerDefinition" class="mb-8 p-6 border-2 border-gray-200 rounded-lg">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Define Headers</h2>
-            <div id="headerInputsContainer" class="flex flex-col gap-4 mb-4">
-                <!-- Header input fields will be dynamically added here -->
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button id="addHeaderButton" class="flex-1 bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-300 shadow-md">Add Header Field</button>
-                <button id="finalizeHeadersButton" class="flex-1 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">Finish & Start Data Entry</button>
-            </div>
-        </div>
-        
-        <!-- Import CSV Section -->
-        <div id="importCsvSection" class="mb-8 p-6 border-2 border-gray-200 rounded-lg">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Import Table from CSV</h2>
-            <p class="text-gray-600 mb-4">Export your data from Google Sheets or Excel as a CSV file and upload it here.</p>
-            <input type="file" id="csvFileInput" accept=".csv" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
-            <button id="importCsvButton" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md">Import CSV</button>
-        </div>
+        <a href="/index2.html"> general table</a>
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Nafass Perfumes</h1>
+        <p class="text-center text-gray-600 mb-8 text-sm italic">Created by zikoerr (Zakaria er-rahmouny)</p>
 
         <!-- Data Entry Section -->
-        <div id="dataEntry" class="hidden">
+        <div id="dataEntry">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Enter Data</h2>
-            <div id="inputContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div id="inputContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <!-- Dynamic input fields will be injected here -->
             </div>
             <div class="flex flex-col sm:flex-row gap-4">
@@ -53,7 +42,7 @@
         </div>
 
         <!-- Table Display Section -->
-        <div id="tableDisplay" class="mt-8 hidden">
+        <div id="tableDisplay" class="mt-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Table</h2>
             <div class="bg-gray-100 p-4 rounded-lg shadow-inner overflow-x-auto">
                 <table class="w-full text-left whitespace-nowrap">
@@ -69,13 +58,6 @@
 
     <script>
         // Get all necessary DOM elements
-        const headerDefinition = document.getElementById('headerDefinition');
-        const headerInputsContainer = document.getElementById('headerInputsContainer');
-        const addHeaderButton = document.getElementById('addHeaderButton');
-        const finalizeHeadersButton = document.getElementById('finalizeHeadersButton');
-        const importCsvSection = document.getElementById('importCsvSection');
-        const csvFileInput = document.getElementById('csvFileInput');
-        const importCsvButton = document.getElementById('importCsvButton');
         const dataEntry = document.getElementById('dataEntry');
         const inputContainer = document.getElementById('inputContainer');
         const addRowButton = document.getElementById('addRowButton');
@@ -86,7 +68,25 @@
         const tableBody = document.getElementById('tableBody');
         const messageBox = document.getElementById('messageBox');
 
-        let headers = [];
+        // Pre-defined headers and their types based on the user's request
+        const headers = [
+            { name: 'id', type: 'number' },
+            { name: 'name', type: 'text' },
+            { name: 'slug', type: 'text' },
+            { name: 'brand', type: 'text' },
+            { name: 'description', type: 'text' },
+            { name: 'price', type: 'number' },
+            { name: 'original_img', type: 'url' },
+            { name: 'image', type: 'text' }, // Changed to text to handle multiple URLs
+            { name: 'category', type: 'select' },
+            { name: 'top_notes', type: 'text' },
+            { name: 'heart_notes', type: 'text' },
+            { name: 'base_notes', type: 'text' },
+            { name: 'sizes', type: 'select' },
+            { name: 'availability', type: 'select' },
+            { name: 'season', type: 'multi-select' }
+        ];
+
         let tableData = [];
 
         // Function to show a message to the user
@@ -101,31 +101,6 @@
             setTimeout(() => {
                 messageBox.classList.add('hidden');
             }, 3000);
-        }
-
-        // Function to create a new header input field row
-        function createHeaderInputRow() {
-            const inputWrapper = document.createElement('div');
-            inputWrapper.classList.add('flex', 'flex-col', 'sm:flex-row', 'gap-2');
-            inputWrapper.innerHTML = `
-                <input type="text" placeholder="Header Name" class="header-name-input flex-1 p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
-                <select class="header-type-select p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
-                    <option value="text">Text</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date</option>
-                    <option value="email">Email</option>
-                    <option value="tel">Telephone</option>
-                    <option value="url">URL</option>
-                </select>
-                <button type="button" class="remove-header-button text-red-500 hover:text-red-700 px-2">X</button>
-            `;
-            headerInputsContainer.appendChild(inputWrapper);
-
-            // Add event listener to the newly created remove button
-            const removeButton = inputWrapper.querySelector('.remove-header-button');
-            removeButton.addEventListener('click', () => {
-                inputWrapper.remove();
-            });
         }
         
         // Function to render the table on the page
@@ -153,155 +128,126 @@
             });
         }
 
-        // Initial call to add the first header field
-        createHeaderInputRow();
-
-        // Event listener for "Add Header Field" button
-        addHeaderButton.addEventListener('click', createHeaderInputRow);
-        
-        // Event listener for "Finish & Start Data Entry" button
-        finalizeHeadersButton.addEventListener('click', () => {
-            const headerNameInputs = document.querySelectorAll('.header-name-input');
-            const headerTypeSelects = document.querySelectorAll('.header-type-select');
-            
-            headers = [];
-            let isValid = true;
-            
-            headerNameInputs.forEach((input, index) => {
-                const headerName = input.value.trim();
-                const headerType = headerTypeSelects[index].value;
-                if (headerName === '') {
-                    isValid = false;
-                    return;
-                }
-                headers.push({ name: headerName, type: headerType });
-            });
-            
-            if (!isValid) {
-                showMessage("Please enter a name for all headers.", "error");
-                return;
-            }
-            
-            if (headers.length === 0) {
-                showMessage("Please add at least one header.", "error");
-                return;
-            }
-            
-            // Hide header definition and show data entry
-            headerDefinition.classList.add('hidden');
-            importCsvSection.classList.add('hidden');
-            dataEntry.classList.remove('hidden');
-            tableDisplay.classList.remove('hidden');
-            
-            // Clear any previous inputs and headers
+        // Function to initialize the app by setting up the input fields
+        function initializeApp() {
+            // Dynamically create data input fields for all headers except 'id'
             inputContainer.innerHTML = '';
-            tableData = [];
-
-            // Dynamically create data input fields and table headers
-            headers.forEach(header => {
+            headers.filter(h => h.name !== 'id').forEach(header => {
                 const inputWrapper = document.createElement('div');
                 inputWrapper.classList.add('flex', 'flex-col');
-                let inputType = header.type;
-                inputWrapper.innerHTML = `
-                    <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
-                    <input type="${inputType}" class="data-input p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Enter ${header.name}">
-                `;
+                let inputHtml = '';
+                
+                // Determine the input type based on the header definition
+                switch (header.name) {
+                    case 'category':
+                        inputHtml = `
+                            <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                            <select id="input-${header.name}" class="data-input p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                                <option value="" disabled selected>Select a category</option>
+                                <option value="Men">Men</option>
+                                <option value="Women">Women</option>
+                                <option value="Unisex">Unisex</option>
+                            </select>`;
+                        break;
+                    case 'sizes':
+                        inputHtml = `
+                            <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                            <select id="input-${header.name}" class="data-input p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                                <option value="" disabled selected>Select a size</option>
+                                <option value="50 ml">50 ml</option>
+                                <option value="30 ml">30 ml</option>
+                                <option value="Both">Both of them</option>
+                            </select>`;
+                        break;
+                    case 'season':
+                        inputHtml = `
+                            <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                            <select id="input-${header.name}" class="data-input p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" multiple size="7">
+                                <option value="Winter">❄️ Winter</option>
+                                <option value="Summer">☀️ Summer</option>
+                                <option value="Autumn">🍂 Autumn</option>
+                                <option value="Spring">🌸 Spring</option>
+                                <option value="All-year">🔄 All-year</option>
+                                <option value="Autumn & Winter">🍂❄️ Autumn & Winter</option>
+                                <option value="Spring & Summer">🌸☀️ Spring & Summer</option>
+                            </select>`;
+                        break;
+                    case 'availability':
+                        inputHtml = `
+                            <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                            <select id="input-${header.name}" class="data-input p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                                <option value="" disabled selected>Select availability</option>
+                                <option value="In-Stock">In-Stock</option>
+                                <option value="Out-of-Stock">Out-of-Stock</option>
+                            </select>`;
+                        break;
+                    case 'image':
+                        inputHtml = `
+                            <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                            <textarea id="input-${header.name}" class="data-input p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter image URLs, separated by commas"></textarea>`;
+                        break;
+                    default:
+                        inputHtml = `
+                            <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                            <input type="${header.type}" id="input-${header.name}" class="data-input p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter ${header.name}">
+                        `;
+                }
+                
+                inputWrapper.innerHTML = inputHtml;
                 inputContainer.appendChild(inputWrapper);
             });
+            
+            // Add event listener to the 'name' input to auto-generate the slug
+            const nameInput = document.getElementById('input-name');
+            const slugInput = document.getElementById('input-slug');
+            if (nameInput && slugInput) {
+                nameInput.addEventListener('input', () => {
+                    const nameValue = nameInput.value;
+                    const slug = nameValue.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+                    slugInput.value = slug;
+                });
+            }
             
             renderTable();
 
             // Focus on the first input field
-            const firstInput = document.querySelector('.data-input');
+            const firstInput = document.querySelector('.data-input:not([multiple])');
             if (firstInput) {
                 firstInput.focus();
             }
-        });
+        }
         
-        // Event listener for the "Import CSV" button
-        importCsvButton.addEventListener('click', () => {
-            const file = csvFileInput.files[0];
-            if (!file) {
-                showMessage("Please select a CSV file to import.", "error");
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const text = e.target.result;
-                const rows = text.trim().split('\n');
-                
-                // Parse headers from the first row
-                const headerNames = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-                
-                // Parse data rows
-                tableData = [];
-                for (let i = 1; i < rows.length; i++) {
-                    const rowValues = rows[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-                    if (rowValues.length === headerNames.length) {
-                        const newRow = {};
-                        headerNames.forEach((header, index) => {
-                            newRow[header] = rowValues[index];
-                        });
-                        tableData.push(newRow);
-                    }
-                }
-                
-                // Infer data types for headers
-                headers = headerNames.map(name => {
-                    // Check if the entire column contains only numbers
-                    const isNumberColumn = tableData.every(row => {
-                        const value = row[name];
-                        return value === '' || !isNaN(Number(value));
-                    });
-                    return { name, type: isNumberColumn ? 'number' : 'text' };
-                });
-                
-                // Hide other sections and show the data entry and table
-                headerDefinition.classList.add('hidden');
-                importCsvSection.classList.add('hidden');
-                dataEntry.classList.remove('hidden');
-                tableDisplay.classList.remove('hidden');
-                
-                // Dynamically create data input fields based on imported headers
-                inputContainer.innerHTML = '';
-                headers.forEach(header => {
-                    const inputWrapper = document.createElement('div');
-                    inputWrapper.classList.add('flex', 'flex-col');
-                    let inputType = header.type;
-                    inputWrapper.innerHTML = `
-                        <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
-                        <input type="${inputType}" class="data-input p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Enter ${header.name}">
-                    `;
-                    inputContainer.appendChild(inputWrapper);
-                });
-                
-                renderTable();
-                showMessage("CSV file imported successfully!");
-            };
-            reader.onerror = () => {
-                showMessage("An error occurred while reading the file.", "error");
-            };
-            reader.readAsText(file);
-        });
+        // Call the initialization function on page load
+        initializeApp();
 
         // Event listener for the "Add Row" button
         addRowButton.addEventListener('click', () => {
             const inputs = document.querySelectorAll('.data-input');
             if (inputs.length === 0) {
-                showMessage("Please define your headers first.", "error");
+                showMessage("Headers are not defined.", "error");
                 return;
             }
 
             const newRow = {};
             let allInputsEmpty = true;
             let isValid = true;
+            
+            // Assign the auto-incremented ID
+            newRow.id = tableData.length + 1;
 
-            inputs.forEach((input, index) => {
-                const header = headers[index];
-                const value = input.value.trim();
+            inputs.forEach((input) => {
+                const header = headers.find(h => h.name === input.id.replace('input-', ''));
+                if (!header) return;
+
+                let value;
+                if (input.tagName === 'SELECT' && input.multiple) {
+                    value = Array.from(input.selectedOptions).map(option => option.value).join(', ');
+                } else {
+                    value = input.value.trim();
+                }
+
                 newRow[header.name] = value;
-                if (value !== '') {
+                if (value !== '' && value !== null) {
                     allInputsEmpty = false;
                 }
                 
@@ -325,7 +271,15 @@
             tableData.push(newRow);
 
             // Clear the input fields for the next row
-            inputs.forEach(input => input.value = '');
+            inputs.forEach(input => {
+                if (input.tagName === 'SELECT' && input.multiple) {
+                    Array.from(input.options).forEach(option => option.selected = false);
+                } else if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                } else {
+                    input.value = '';
+                }
+            });
 
             // Update the display table
             const tr = document.createElement('tr');
@@ -341,7 +295,7 @@
             showMessage("Row added successfully!");
             
             // Focus on the first input field
-            const firstInput = document.querySelector('.data-input');
+            const firstInput = document.querySelector('.data-input:not([multiple])');
             if (firstInput) {
                 firstInput.focus();
             }
@@ -395,14 +349,14 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.setAttribute('href', url);
-            link.setAttribute('download', 'table_data.csv');
+            link.setAttribute('download', 'nafass_perfumes_data.csv');
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            showMessage("Table exported as table_data.csv!");
+            showMessage("Table exported as nafass_perfumes_data.csv!");
         });
 
     </script>

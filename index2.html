@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spreadsheet Table Creator</title>
+    <!-- Use Tailwind CSS for a modern and responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Spreadsheet Table Creator</h1>
+        <p class="text-center text-gray-600 mb-8">Define your table headers or import from a CSV file.</p>
+
+        <!-- Header Definition Section -->
+        <div id="headerDefinition" class="mb-8 p-6 border-2 border-gray-200 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Define Headers</h2>
+            <div id="headerInputsContainer" class="flex flex-col gap-4 mb-4">
+                <!-- Header input fields will be dynamically added here -->
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="addHeaderButton" class="flex-1 bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition duration-300 shadow-md">Add Header Field</button>
+                <button id="finalizeHeadersButton" class="flex-1 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">Finish & Start Data Entry</button>
+            </div>
+        </div>
+        
+        <!-- Import CSV Section -->
+        <div id="importCsvSection" class="mb-8 p-6 border-2 border-gray-200 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Import Table from CSV</h2>
+            <p class="text-gray-600 mb-4">Export your data from Google Sheets or Excel as a CSV file and upload it here.</p>
+            <input type="file" id="csvFileInput" accept=".csv" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+            <button id="importCsvButton" class="mt-4 w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md">Import CSV</button>
+        </div>
+
+        <!-- Data Entry Section -->
+        <div id="dataEntry" class="hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Enter Data</h2>
+            <div id="inputContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <!-- Dynamic input fields will be injected here -->
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="addRowButton" class="flex-1 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition duration-300 shadow-md">Add Row</button>
+                <button id="copyButton" class="flex-1 bg-purple-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-purple-700 transition duration-300 shadow-md">Copy Table to Clipboard</button>
+                <button id="exportCsvButton" class="flex-1 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md">Export as CSV</button>
+            </div>
+        </div>
+
+        <!-- Table Display Section -->
+        <div id="tableDisplay" class="mt-8 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Table</h2>
+            <div class="bg-gray-100 p-4 rounded-lg shadow-inner overflow-x-auto">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead>
+                        <tr id="tableHeaders" class="text-gray-700 font-semibold border-b-2 border-gray-300"></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div id="messageBox" class="mt-4 p-3 hidden rounded-lg text-center font-semibold"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get all necessary DOM elements
+        const headerDefinition = document.getElementById('headerDefinition');
+        const headerInputsContainer = document.getElementById('headerInputsContainer');
+        const addHeaderButton = document.getElementById('addHeaderButton');
+        const finalizeHeadersButton = document.getElementById('finalizeHeadersButton');
+        const importCsvSection = document.getElementById('importCsvSection');
+        const csvFileInput = document.getElementById('csvFileInput');
+        const importCsvButton = document.getElementById('importCsvButton');
+        const dataEntry = document.getElementById('dataEntry');
+        const inputContainer = document.getElementById('inputContainer');
+        const addRowButton = document.getElementById('addRowButton');
+        const copyButton = document.getElementById('copyButton');
+        const exportCsvButton = document.getElementById('exportCsvButton');
+        const tableDisplay = document.getElementById('tableDisplay');
+        const tableHeaders = document.getElementById('tableHeaders');
+        const tableBody = document.getElementById('tableBody');
+        const messageBox = document.getElementById('messageBox');
+
+        let headers = [];
+        let tableData = [];
+
+        // Function to show a message to the user
+        function showMessage(text, type = 'success') {
+            messageBox.textContent = text;
+            messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                messageBox.classList.add('bg-red-100', 'text-red-800');
+            }
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Function to create a new header input field row
+        function createHeaderInputRow() {
+            const inputWrapper = document.createElement('div');
+            inputWrapper.classList.add('flex', 'flex-col', 'sm:flex-row', 'gap-2');
+            inputWrapper.innerHTML = `
+                <input type="text" placeholder="Header Name" class="header-name-input flex-1 p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <select class="header-type-select p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                    <option value="email">Email</option>
+                    <option value="tel">Telephone</option>
+                    <option value="url">URL</option>
+                </select>
+                <button type="button" class="remove-header-button text-red-500 hover:text-red-700 px-2">X</button>
+            `;
+            headerInputsContainer.appendChild(inputWrapper);
+
+            // Add event listener to the newly created remove button
+            const removeButton = inputWrapper.querySelector('.remove-header-button');
+            removeButton.addEventListener('click', () => {
+                inputWrapper.remove();
+            });
+        }
+        
+        // Function to render the table on the page
+        function renderTable() {
+            tableHeaders.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.classList.add('p-3');
+                th.textContent = header.name;
+                tableHeaders.appendChild(th);
+            });
+            
+            tableData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.classList.add('border-b', 'border-gray-200');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.classList.add('p-3', 'text-gray-800');
+                    td.textContent = row[header.name];
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Initial call to add the first header field
+        createHeaderInputRow();
+
+        // Event listener for "Add Header Field" button
+        addHeaderButton.addEventListener('click', createHeaderInputRow);
+        
+        // Event listener for "Finish & Start Data Entry" button
+        finalizeHeadersButton.addEventListener('click', () => {
+            const headerNameInputs = document.querySelectorAll('.header-name-input');
+            const headerTypeSelects = document.querySelectorAll('.header-type-select');
+            
+            headers = [];
+            let isValid = true;
+            
+            headerNameInputs.forEach((input, index) => {
+                const headerName = input.value.trim();
+                const headerType = headerTypeSelects[index].value;
+                if (headerName === '') {
+                    isValid = false;
+                    return;
+                }
+                headers.push({ name: headerName, type: headerType });
+            });
+            
+            if (!isValid) {
+                showMessage("Please enter a name for all headers.", "error");
+                return;
+            }
+            
+            if (headers.length === 0) {
+                showMessage("Please add at least one header.", "error");
+                return;
+            }
+            
+            // Hide header definition and show data entry
+            headerDefinition.classList.add('hidden');
+            importCsvSection.classList.add('hidden');
+            dataEntry.classList.remove('hidden');
+            tableDisplay.classList.remove('hidden');
+            
+            // Clear any previous inputs and headers
+            inputContainer.innerHTML = '';
+            tableData = [];
+
+            // Dynamically create data input fields and table headers
+            headers.forEach(header => {
+                const inputWrapper = document.createElement('div');
+                inputWrapper.classList.add('flex', 'flex-col');
+                let inputType = header.type;
+                inputWrapper.innerHTML = `
+                    <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                    <input type="${inputType}" class="data-input p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Enter ${header.name}">
+                `;
+                inputContainer.appendChild(inputWrapper);
+            });
+            
+            renderTable();
+
+            // Focus on the first input field
+            const firstInput = document.querySelector('.data-input');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        });
+        
+        // Event listener for the "Import CSV" button
+        importCsvButton.addEventListener('click', () => {
+            const file = csvFileInput.files[0];
+            if (!file) {
+                showMessage("Please select a CSV file to import.", "error");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const rows = text.trim().split('\n');
+                
+                // Parse headers from the first row
+                const headerNames = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                
+                // Parse data rows
+                tableData = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const rowValues = rows[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                    if (rowValues.length === headerNames.length) {
+                        const newRow = {};
+                        headerNames.forEach((header, index) => {
+                            newRow[header] = rowValues[index];
+                        });
+                        tableData.push(newRow);
+                    }
+                }
+                
+                // Infer data types for headers
+                headers = headerNames.map(name => {
+                    // Check if the entire column contains only numbers
+                    const isNumberColumn = tableData.every(row => {
+                        const value = row[name];
+                        return value === '' || !isNaN(Number(value));
+                    });
+                    return { name, type: isNumberColumn ? 'number' : 'text' };
+                });
+                
+                // Hide other sections and show the data entry and table
+                headerDefinition.classList.add('hidden');
+                importCsvSection.classList.add('hidden');
+                dataEntry.classList.remove('hidden');
+                tableDisplay.classList.remove('hidden');
+                
+                // Dynamically create data input fields based on imported headers
+                inputContainer.innerHTML = '';
+                headers.forEach(header => {
+                    const inputWrapper = document.createElement('div');
+                    inputWrapper.classList.add('flex', 'flex-col');
+                    let inputType = header.type;
+                    inputWrapper.innerHTML = `
+                        <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
+                        <input type="${inputType}" class="data-input p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Enter ${header.name}">
+                    `;
+                    inputContainer.appendChild(inputWrapper);
+                });
+                
+                renderTable();
+                showMessage("CSV file imported successfully!");
+            };
+            reader.onerror = () => {
+                showMessage("An error occurred while reading the file.", "error");
+            };
+            reader.readAsText(file);
+        });
+
+        // Event listener for the "Add Row" button
+        addRowButton.addEventListener('click', () => {
+            const inputs = document.querySelectorAll('.data-input');
+            if (inputs.length === 0) {
+                showMessage("Please define your headers first.", "error");
+                return;
+            }
+
+            const newRow = {};
+            let allInputsEmpty = true;
+            let isValid = true;
+
+            inputs.forEach((input, index) => {
+                const header = headers[index];
+                const value = input.value.trim();
+                newRow[header.name] = value;
+                if (value !== '') {
+                    allInputsEmpty = false;
+                }
+                
+                // Simple validation based on type
+                if (header.type === 'number' && value !== '' && isNaN(Number(value))) {
+                    isValid = false;
+                }
+            });
+
+            if (allInputsEmpty) {
+                showMessage("Please fill out at least one field before adding a row.", "error");
+                return;
+            }
+            
+            if (!isValid) {
+                showMessage("One or more number fields contain invalid data.", "error");
+                return;
+            }
+
+            // Add the new row to our data array
+            tableData.push(newRow);
+
+            // Clear the input fields for the next row
+            inputs.forEach(input => input.value = '');
+
+            // Update the display table
+            const tr = document.createElement('tr');
+            tr.classList.add('border-b', 'border-gray-200');
+            headers.forEach(header => {
+                const td = document.createElement('td');
+                td.classList.add('p-3', 'text-gray-800');
+                td.textContent = newRow[header.name];
+                tr.appendChild(td);
+            });
+            tableBody.appendChild(tr);
+
+            showMessage("Row added successfully!");
+            
+            // Focus on the first input field
+            const firstInput = document.querySelector('.data-input');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        });
+
+        // Event listener for the "Copy Table to Clipboard" button
+        copyButton.addEventListener('click', () => {
+            if (tableData.length === 0) {
+                showMessage("No data to copy. Add some rows first.", "error");
+                return;
+            }
+
+            // Create the tab-separated string
+            let clipboardText = headers.map(h => h.name).join('\t') + '\n';
+            tableData.forEach(row => {
+                const rowValues = headers.map(header => row[header.name]);
+                clipboardText += rowValues.join('\t') + '\n';
+            });
+
+            // Use a temporary textarea to copy to the clipboard
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = clipboardText;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextarea);
+
+            showMessage("Table data copied to clipboard! You can now paste it into a spreadsheet.");
+        });
+
+        // Event listener for the "Export as CSV" button
+        exportCsvButton.addEventListener('click', () => {
+            if (tableData.length === 0) {
+                showMessage("No data to export. Add some rows first.", "error");
+                return;
+            }
+            
+            // Create the CSV content
+            let csvContent = headers.map(h => `"${h.name.replace(/"/g, '""')}"`).join(',') + '\n';
+            tableData.forEach(row => {
+                const rowValues = headers.map(header => {
+                    const value = row[header.name];
+                    // Escape double quotes and wrap in quotes to handle commas within data
+                    return `"${String(value).replace(/"/g, '""')}"`;
+                });
+                csvContent += rowValues.join(',') + '\n';
+            });
+
+            // Create a Blob and a download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'table_data.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showMessage("Table exported as table_data.csv!");
+        });
+
+    </script> 
+    
+</body>
+</html>
