@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spreadsheet Table Creator</title>
-    
+    <!-- Use Tailwind CSS for a modern and responsive design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -114,6 +114,8 @@
                     <option value="number">Number</option>
                     <option value="date">Date</option>
                     <option value="email">Email</option>
+                    <option value="tel">Telephone</option>
+                    <option value="url">URL</option>
                 </select>
                 <button type="button" class="remove-header-button text-red-500 hover:text-red-700 px-2">X</button>
             `;
@@ -199,7 +201,7 @@
             headers.forEach(header => {
                 const inputWrapper = document.createElement('div');
                 inputWrapper.classList.add('flex', 'flex-col');
-                let inputType = header.type === 'number' ? 'number' : header.type;
+                let inputType = header.type;
                 inputWrapper.innerHTML = `
                     <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
                     <input type="${inputType}" class="data-input p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Enter ${header.name}">
@@ -231,7 +233,6 @@
                 
                 // Parse headers from the first row
                 const headerNames = rows[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-                headers = headerNames.map(name => ({ name, type: 'text' })); // Default all to text for simplicity
                 
                 // Parse data rows
                 tableData = [];
@@ -246,6 +247,16 @@
                     }
                 }
                 
+                // Infer data types for headers
+                headers = headerNames.map(name => {
+                    // Check if the entire column contains only numbers
+                    const isNumberColumn = tableData.every(row => {
+                        const value = row[name];
+                        return value === '' || !isNaN(Number(value));
+                    });
+                    return { name, type: isNumberColumn ? 'number' : 'text' };
+                });
+                
                 // Hide other sections and show the data entry and table
                 headerDefinition.classList.add('hidden');
                 importCsvSection.classList.add('hidden');
@@ -257,7 +268,7 @@
                 headers.forEach(header => {
                     const inputWrapper = document.createElement('div');
                     inputWrapper.classList.add('flex', 'flex-col');
-                    let inputType = header.type === 'number' ? 'number' : header.type;
+                    let inputType = header.type;
                     inputWrapper.innerHTML = `
                         <label class="text-sm font-medium text-gray-600 mb-1">${header.name}</label>
                         <input type="${inputType}" class="data-input p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Enter ${header.name}">
